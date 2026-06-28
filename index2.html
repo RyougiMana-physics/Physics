@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>矢量加减法教学演示</title>
+<style>
+  :root{
+    --bg:#f4f7fb;
+    --panel:#ffffff;
+    --ink:#1f2937;
+    --muted:#64748b;
+    --grid:#dbe4f0;
+    --axis:#8aa0bd;
+    --a:#e53935;
+    --b:#2563eb;
+    --sum:#16a34a;
+    --diff:#7c3aed;
+    --neg:#6b7280;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  .page{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:10px;
+    gap:10px;
+  }
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-start;
+  }
+  button{
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:var(--ink);
+    border-radius:999px;
+    padding:8px 14px;
+    font-size:14px;
+    cursor:pointer;
+    transition:.15s ease;
+  }
+  button:hover{transform:translateY(-1px);border-color:#94a3b8}
+  button.active{background:#0f172a;color:#fff;border-color:#0f172a}
+  .canvas-wrap{
+    position:relative;
+    flex:1;
+    min-height:0;
+    border:1px solid #e5e7eb;
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+  }
+  canvas{
+    display:block;
+    width:100%;
+    height:100%;
+    cursor:crosshair;
+  }
+  .overlay{
+    position:absolute;
+    top:12px;
+    left:12px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    pointer-events:none;
+  }
+  .pill{
+    background:rgba(255,255,255,.92);
+    border:1px solid #e5e7eb;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:14px;
+    color:var(--ink);
+    backdrop-filter:blur(6px);
+    box-shadow:0 2px 10px rgba(0,0,0,.04);
+  }
+  .legend{
+    position:absolute;
+    right:12px;
+    top:12px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    background:rgba(255,255,255,.92);
+    border:1px solid #e5e7eb;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:13px;
+    color:var(--muted);
+    pointer-events:none;
+  }
+  .tag{display:flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .a{background:var(--a)} .b{background:var(--b)} .sum{background:var(--sum)} .diff{background:var(--diff)} .neg{background:var(--neg)}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="toolbar">
+    <button id="drawA" class="active">手绘 A</button>
+    <button id="drawB">手绘 B</button>
+    <button id="viewBase">原始矢量</button>
+    <button id="viewAdd">A + B</button>
+    <button id="viewSub">A − B</button>
+    <button id="example">示例</button>
+    <button id="clear">清空</button>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="board"></canvas>
+
+    <div class="overlay">
+      <div class="pill" id="status">模式：手绘 A</div>
+      <div class="pill" id="formula">先画 A，再画 B</div>
+    </div>
+
+    <div class="legend">
+      <div class="tag"><span class="dot a"></span>A</div>
+      <div class="tag"><span class="dot b"></span>B</div>
+      <div class="tag"><span class="dot sum"></span>A+B</div>
+      <div class="tag"><span class="dot diff"></span>A−B</div>
+      <div class="tag"><span class="dot neg"></span>−B</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+
+const colors = {
+  A:'#e53935', B:'#2563eb', S:'#16a34a', D:'#7c3aed', N:'#6b7280',
+  grid:'#dbe4f0', axis:'#8aa0bd', ink:'#111827', muted:'#64748b'
+};
+
+const state = {
+  mode:'drawA',
+  drawing:false,
+  currentStart:null,
+  currentEnd:null,
+  A:null,
+  B:null
+};
+
+function resize(){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
+}
+window.addEventListener('resize', resize);
+
+function setActive(id){
+  ['drawA','drawB','viewBase','viewAdd','viewSub'].forEach(k=>{
+    document.getElementById(k).classList.toggle('active', k===id);
+  });
+}
+function updatePanel(){
+  const status = document.getElementById('status');
+  const formula = document.getElementById('formula');
+  if(state.mode === 'drawA'){
+    status.textContent = '模式：手绘 A';
+    formula.textContent = '先画 A，再画 B';
+  }else if(state.mode === 'drawB'){
+    status.textContent = '模式：手绘 B';
+    formula.textContent = '拖动绘制 B';
+  }else if(state.mode === 'base'){
+    status.textContent = '模式：原始矢量';
+    formula.textContent = 'A，B';
+  }else if(state.mode === 'add'){
+    status.textContent = '模式：A + B';
+    formula.textContent = 'A + B';
+  }else if(state.mode === 'sub'){
+    status.textContent = '模式：A − B';
+    formula.textContent = 'A − B = A + (−B)';
+  }
+}
+
+function clearCanvas(){
+  ctx.clearRect(0,0,canvas.clientWidth, canvas.clientHeight);
+}
+function drawGrid(){
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const step = 40;
+  const ox = w/2, oy = h/2;
+
+  clearCanvas();
+  ctx.strokeStyle = colors.grid;
+  ctx.lineWidth = 1;
+  for(let x = ox % step; x <= w; x += step){
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+  }
+  for(let x = ox % step - step; x >= 0; x -= step){
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+  }
+  for(let y = oy % step; y <= h; y += step){
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+  for(let y = oy % step - step; y >= 0; y -= step){
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+
+  ctx.strokeStyle = colors.axis;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(20,oy); ctx.lineTo(w-20,oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox,h-20); ctx.lineTo(ox,20); ctx.stroke();
+  drawArrowHead(w-20, oy, 1, 0, colors.axis, 10);
+  drawArrowHead(ox, 20, 0, -1, colors.axis, 10);
+
+  ctx.fillStyle = colors.muted;
+  ctx.font = '15px Microsoft YaHei, sans-serif';
+  ctx.fillText('x', w-16, oy-10);
+  ctx.fillText('y', ox+10, 18);
+  ctx.fillText('O', ox+8, oy+18);
+}
+
+function drawArrowHead(x, y, ux, uy, color, size=12){
+  const ang = Math.atan2(uy, ux);
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x - size*Math.cos(ang - Math.PI/6), y - size*Math.sin(ang - Math.PI/6));
+  ctx.lineTo(x - size*Math.cos(ang + Math.PI/6), y - size*Math.sin(ang + Math.PI/6));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawArrow(x1, y1, x2, y2, color, label='', dashed=false, width=4.2){
+  const dx = x2 - x1, dy = y2 - y1;
+  const L = Math.hypot(dx, dy);
+  if(L < 2) return;
+
+  const headSize = Math.max(11, width * 2.6);
+  const ux = dx / L, uy = dy / L;
+  const shaftEndX = x2 - ux * (headSize * 0.95);
+  const shaftEndY = y2 - uy * (headSize * 0.95);
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if(dashed) ctx.setLineDash([9,7]);
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(shaftEndX, shaftEndY);
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+  drawArrowHead(x2, y2, ux, uy, color, headSize);
+
+  if(label){
+    ctx.fillStyle = color;
+    ctx.font = 'bold 21px Cambria, Microsoft YaHei, sans-serif';
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    ctx.fillText(label, mx + 8, my - 8);
+  }
+  ctx.restore();
+}
+
+function drawPointLabel(text, x, y, color='#111827'){
+  ctx.fillStyle = color;
+  ctx.font = 'bold 17px Microsoft YaHei, sans-serif';
+  ctx.fillText(text, x+8, y-10);
+}
+function vecFromLine(line){
+  return {dx: line.x2-line.x1, dy: line.y2-line.y1};
+}
+function movedVector(baseStartX, baseStartY, line){
+  const v = vecFromLine(line);
+  return {x1: baseStartX, y1: baseStartY, x2: baseStartX + v.dx, y2: baseStartY + v.dy};
+}
+function negativeVector(line){
+  const v = vecFromLine(line);
+  return {x1: line.x1, y1: line.y1, x2: line.x1 - v.dx, y2: line.y1 - v.dy};
+}
+function resultFromCommonStart(aLine, bLike){
+  const av = vecFromLine(aLine), bv = vecFromLine(bLike);
+  return {x1: aLine.x1, y1: aLine.y1, x2: aLine.x1 + av.dx + bv.dx, y2: aLine.y1 + av.dy + bv.dy};
+}
+
+function draw(){
+  drawGrid();
+
+  if(state.A){
+    drawArrow(state.A.x1, state.A.y1, state.A.x2, state.A.y2, colors.A, 'A', false, 4.3);
+  }
+  if(state.B){
+    drawArrow(state.B.x1, state.B.y1, state.B.x2, state.B.y2, colors.B, 'B', false, 4.3);
+  }
+
+  if(state.mode === 'add' && state.A && state.B){
+    const movedB = movedVector(state.A.x2, state.A.y2, state.B);
+    drawArrow(movedB.x1, movedB.y1, movedB.x2, movedB.y2, colors.B, 'B', true, 3.2);
+    const R = resultFromCommonStart(state.A, state.B);
+    drawArrow(R.x1, R.y1, R.x2, R.y2, colors.S, 'A+B', false, 5.0);
+    drawPointLabel('终点', movedB.x2, movedB.y2);
+  }
+
+  if(state.mode === 'sub' && state.A && state.B){
+    const negB = negativeVector(state.B);
+    drawArrow(negB.x1, negB.y1, negB.x2, negB.y2, colors.N, '−B', false, 3.5);
+    const movedNegB = movedVector(state.A.x2, state.A.y2, negB);
+    drawArrow(movedNegB.x1, movedNegB.y1, movedNegB.x2, movedNegB.y2, colors.N, '−B', true, 3.2);
+    const R = resultFromCommonStart(state.A, negB);
+    drawArrow(R.x1, R.y1, R.x2, R.y2, colors.D, 'A−B', false, 5.0);
+    drawPointLabel('终点', movedNegB.x2, movedNegB.y2);
+  }
+
+  if(state.drawing && state.currentStart && state.currentEnd){
+    const c = state.mode === 'drawB' ? colors.B : colors.A;
+    const label = state.mode === 'drawB' ? 'B' : 'A';
+    drawArrow(state.currentStart.x, state.currentStart.y, state.currentEnd.x, state.currentEnd.y, c, label, false, 4.3);
+  }
+}
+
+function getPos(e){
+  const r = canvas.getBoundingClientRect();
+  return {x: e.clientX - r.left, y: e.clientY - r.top};
+}
+
+canvas.addEventListener('pointerdown', (e)=>{
+  if(!(state.mode === 'drawA' || state.mode === 'drawB')) return;
+  state.drawing = true;
+  state.currentStart = getPos(e);
+  state.currentEnd = getPos(e);
+  draw();
+});
+canvas.addEventListener('pointermove', (e)=>{
+  if(!state.drawing) return;
+  state.currentEnd = getPos(e);
+  draw();
+});
+canvas.addEventListener('pointerup', (e)=>{
+  if(!state.drawing) return;
+  state.currentEnd = getPos(e);
+  const line = {
+    x1: state.currentStart.x, y1: state.currentStart.y,
+    x2: state.currentEnd.x, y2: state.currentEnd.y
+  };
+  if(state.mode === 'drawA') state.A = line;
+  if(state.mode === 'drawB') state.B = line;
+  state.drawing = false;
+  state.currentStart = null;
+  state.currentEnd = null;
+  draw();
+});
+
+document.getElementById('drawA').onclick = ()=>{ state.mode='drawA'; setActive('drawA'); updatePanel(); draw(); };
+document.getElementById('drawB').onclick = ()=>{ state.mode='drawB'; setActive('drawB'); updatePanel(); draw(); };
+document.getElementById('viewBase').onclick = ()=>{ state.mode='base'; setActive('viewBase'); updatePanel(); draw(); };
+document.getElementById('viewAdd').onclick = ()=>{ state.mode='add'; setActive('viewAdd'); updatePanel(); draw(); };
+document.getElementById('viewSub').onclick = ()=>{ state.mode='sub'; setActive('viewSub'); updatePanel(); draw(); };
+document.getElementById('clear').onclick = ()=>{ state.A = null; state.B = null; state.mode='drawA'; setActive('drawA'); updatePanel(); draw(); };
+document.getElementById('example').onclick = ()=>{
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const ox = w/2, oy = h/2;
+  state.A = {x1:ox, y1:oy, x2:ox+180, y2:oy-160};
+  state.B = {x1:ox, y1:oy, x2:ox+220, y2:oy-40};
+  state.mode='base'; setActive('viewBase'); updatePanel(); draw();
+};
+
+resize();
+updatePanel();
+</script>
+</body>
+</html>
