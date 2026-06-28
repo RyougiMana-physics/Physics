@@ -3,130 +3,137 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>矢量加减法教学演示（手绘版 v3）</title>
+<title>矢量加减法教学演示</title>
 <style>
   :root{
-    --bg:#f5f7fb; --panel:#ffffff; --ink:#1f2937; --muted:#64748b;
-    --grid:#dbe4f0; --axis:#8aa0bd;
-    --a:#e53935; --b:#2563eb; --sum:#16a34a; --diff:#7c3aed; --neg:#6b7280;
+    --bg:#f4f7fb;
+    --panel:#ffffff;
+    --ink:#1f2937;
+    --muted:#64748b;
+    --grid:#dbe4f0;
+    --axis:#8aa0bd;
+    --a:#e53935;
+    --b:#2563eb;
+    --sum:#16a34a;
+    --diff:#7c3aed;
+    --neg:#6b7280;
   }
   *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
   body{
-    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
-    background:linear-gradient(180deg,#eef4fb,#f8fafc); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
   }
-  header{max-width:1200px;margin:0 auto;padding:24px 28px 8px}
-  h1{margin:0;font-size:32px}
-  .sub{margin-top:8px;color:var(--muted);font-size:15px}
-  main{
-    max-width:1200px; margin:0 auto; padding:14px 28px 32px;
-    display:grid; grid-template-columns:minmax(700px,1fr) 330px; gap:20px;
+  .page{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:10px;
+    gap:10px;
   }
-  .card{
-    background:rgba(255,255,255,.92); border:1px solid #e5e7eb; border-radius:22px;
-    box-shadow:0 14px 32px rgba(15,23,42,.08);
-  }
-  .left{padding:18px}
-  .right{padding:18px}
   .toolbar{
-    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-start;
   }
-  .group{display:flex; flex-wrap:wrap; gap:8px}
   button{
-    border:1px solid #cbd5e1; background:#fff; border-radius:999px; padding:9px 14px; font-size:14px;
-    cursor:pointer; transition:.18s ease;
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:var(--ink);
+    border-radius:999px;
+    padding:8px 14px;
+    font-size:14px;
+    cursor:pointer;
+    transition:.15s ease;
   }
-  button:hover{transform:translateY(-1px); border-color:#94a3b8}
-  button.active{background:#0f172a; color:#fff; border-color:#0f172a}
+  button:hover{transform:translateY(-1px);border-color:#94a3b8}
+  button.active{background:#0f172a;color:#fff;border-color:#0f172a}
   .canvas-wrap{
-    position:relative; height:620px; border:1px solid #e5e7eb; border-radius:16px; overflow:hidden; background:#fff;
+    position:relative;
+    flex:1;
+    min-height:0;
+    border:1px solid #e5e7eb;
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
   }
-  canvas{display:block; width:100%; height:100%; cursor:crosshair}
-  .hint{
-    position:absolute; left:14px; bottom:14px; font-size:13px; color:var(--muted);
-    background:rgba(255,255,255,.92); border:1px solid #e5e7eb; border-radius:999px; padding:8px 12px;
+  canvas{
+    display:block;
+    width:100%;
+    height:100%;
+    cursor:crosshair;
   }
-  .section{padding:14px 0; border-bottom:1px solid #e5e7eb}
-  .section:last-child{border-bottom:none}
-  h2{margin:0 0 10px; font-size:18px}
-  .formula{
-    font-family:"Cambria Math","Times New Roman",serif; font-size:24px; line-height:1.5;
-    background:#f8fafc; border:1px solid #e5e7eb; border-radius:14px; padding:12px 14px;
+  .overlay{
+    position:absolute;
+    top:12px;
+    left:12px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    pointer-events:none;
   }
-  .small{color:var(--muted); font-size:14px; line-height:1.7}
-  .legend{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
-  .tag{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:14px}
-  .dot{width:12px; height:12px; border-radius:50%}
+  .pill{
+    background:rgba(255,255,255,.92);
+    border:1px solid #e5e7eb;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:14px;
+    color:var(--ink);
+    backdrop-filter:blur(6px);
+    box-shadow:0 2px 10px rgba(0,0,0,.04);
+  }
+  .legend{
+    position:absolute;
+    right:12px;
+    top:12px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    background:rgba(255,255,255,.92);
+    border:1px solid #e5e7eb;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:13px;
+    color:var(--muted);
+    pointer-events:none;
+  }
+  .tag{display:flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
   .a{background:var(--a)} .b{background:var(--b)} .sum{background:var(--sum)} .diff{background:var(--diff)} .neg{background:var(--neg)}
-  ol{margin:8px 0 0; padding-left:20px; color:var(--muted); line-height:1.8; font-size:14px}
-  @media (max-width:980px){
-    main{grid-template-columns:1fr; padding:12px 18px 28px}
-    header{padding:20px 18px 8px}
-    .canvas-wrap{height:460px}
-  }
 </style>
 </head>
 <body>
-<header>
-  <h1>矢量加减法教学演示（手绘版）</h1>
-  <div class="sub">老师先手绘两个矢量，再切换到 <b>A+B</b> 或 <b>A−B</b> 进行课堂演示。线条更细，箭头更干净。</div>
-</header>
+<div class="page">
+  <div class="toolbar">
+    <button id="drawA" class="active">手绘 A</button>
+    <button id="drawB">手绘 B</button>
+    <button id="viewBase">原始矢量</button>
+    <button id="viewAdd">A + B</button>
+    <button id="viewSub">A − B</button>
+    <button id="example">示例</button>
+    <button id="clear">清空</button>
+  </div>
 
-<main>
-  <section class="card left">
-    <div class="toolbar">
-      <div class="group">
-        <button id="drawA" class="active">手绘 A</button>
-        <button id="drawB">手绘 B</button>
-        <button id="viewBase">原始矢量</button>
-        <button id="viewAdd">演示 A + B</button>
-        <button id="viewSub">演示 A − B</button>
-      </div>
-      <div class="group">
-        <button id="example">示例</button>
-        <button id="clear">清空重画</button>
-      </div>
-    </div>
-    <div class="canvas-wrap">
-      <canvas id="board"></canvas>
-      <div class="hint">操作：先点“手绘 A / 手绘 B”，然后在画布上按下并拖动即可画出矢量。</div>
-    </div>
-  </section>
+  <div class="canvas-wrap">
+    <canvas id="board"></canvas>
 
-  <aside class="card right">
-    <div class="section">
-      <h2 id="title">当前模式：手绘 A</h2>
-      <div class="formula" id="formula">先画出矢量 A，再画出矢量 B</div>
-      <div class="small" id="explain">适合课堂板演：老师可像在白板上一样拖出两根矢量，再演示首尾相接和减法转化。</div>
-      <div class="legend">
-        <div class="tag"><span class="dot a"></span>矢量 A（红）</div>
-        <div class="tag"><span class="dot b"></span>矢量 B（蓝）</div>
-        <div class="tag"><span class="dot sum"></span>A+B（绿）</div>
-        <div class="tag"><span class="dot diff"></span>A−B（紫）</div>
-        <div class="tag"><span class="dot neg"></span>−B（灰）</div>
-      </div>
+    <div class="overlay">
+      <div class="pill" id="status">模式：手绘 A</div>
+      <div class="pill" id="formula">先画 A，再画 B</div>
     </div>
 
-    <div class="section">
-      <h2>教学提示</h2>
-      <div class="small">
-        1. 加法：把 <b>B</b> 平移到 <b>A</b> 的终点，首尾相接。<br>
-        2. 减法：先取反向量 <b>−B</b>，再做 <b>A + (−B)</b>。<br>
-        3. 这里演示的是<strong>自由矢量</strong>，所以可以平移而不改变大小和方向。
-      </div>
+    <div class="legend">
+      <div class="tag"><span class="dot a"></span>A</div>
+      <div class="tag"><span class="dot b"></span>B</div>
+      <div class="tag"><span class="dot sum"></span>A+B</div>
+      <div class="tag"><span class="dot diff"></span>A−B</div>
+      <div class="tag"><span class="dot neg"></span>−B</div>
     </div>
-
-    <div class="section">
-      <h2>课堂使用建议</h2>
-      <ol>
-        <li>先画两个从原点出发的矢量，帮助学生认识“方向 + 大小”。</li>
-        <li>切到 <b>A+B</b>，强调“平移 B，不改变 B”。</li>
-        <li>切到 <b>A−B</b>，强调“减去 B = 加上反向量 −B”。</li>
-        <li>如需更换图形，直接重新点击“手绘 A / 手绘 B”覆盖重画即可。</li>
-      </ol>
-    </div>
-  </aside>
-</main>
+  </div>
+</div>
 
 <script>
 const canvas = document.getElementById('board');
@@ -162,29 +169,23 @@ function setActive(id){
   });
 }
 function updatePanel(){
-  const title = document.getElementById('title');
+  const status = document.getElementById('status');
   const formula = document.getElementById('formula');
-  const explain = document.getElementById('explain');
   if(state.mode === 'drawA'){
-    title.textContent = '当前模式：手绘 A';
-    formula.textContent = '先在画布上拖动画出红色矢量 A';
-    explain.textContent = '按下鼠标并拖动即可。建议先从原点画出，便于第一次接触矢量的学生观察。';
+    status.textContent = '模式：手绘 A';
+    formula.textContent = '先画 A，再画 B';
   }else if(state.mode === 'drawB'){
-    title.textContent = '当前模式：手绘 B';
-    formula.textContent = '在画布上拖动画出蓝色矢量 B';
-    explain.textContent = 'B 可以与 A 画在同一起点，也可以画在别处；演示时会按自由矢量处理。';
+    status.textContent = '模式：手绘 B';
+    formula.textContent = '拖动绘制 B';
   }else if(state.mode === 'base'){
-    title.textContent = '当前模式：原始矢量';
-    formula.textContent = '先画出两个矢量，再进入运算演示';
-    explain.textContent = '此模式只显示老师手绘的 A 和 B，适合先做“认识矢量”的引入。';
+    status.textContent = '模式：原始矢量';
+    formula.textContent = 'A，B';
   }else if(state.mode === 'add'){
-    title.textContent = '当前模式：演示 A + B';
-    formula.textContent = 'A + B：把 B 平移到 A 的终点，首尾相接';
-    explain.textContent = '绿色箭头表示合矢量，虚线蓝箭头表示“平移后的 B”。';
+    status.textContent = '模式：A + B';
+    formula.textContent = 'A + B';
   }else if(state.mode === 'sub'){
-    title.textContent = '当前模式：演示 A − B';
+    status.textContent = '模式：A − B';
     formula.textContent = 'A − B = A + (−B)';
-    explain.textContent = '先取灰色反向量 −B，再把 −B 平移到 A 的终点，得到紫色结果矢量。';
   }
 }
 
@@ -194,27 +195,36 @@ function clearCanvas(){
 function drawGrid(){
   const w = canvas.clientWidth, h = canvas.clientHeight;
   const step = 40;
+  const ox = w/2, oy = h/2;
+
   clearCanvas();
   ctx.strokeStyle = colors.grid;
   ctx.lineWidth = 1;
-  for(let x=0; x<=w; x+=step){
+  for(let x = ox % step; x <= w; x += step){
     ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
   }
-  for(let y=0; y<=h; y+=step){
+  for(let x = ox % step - step; x >= 0; x -= step){
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+  }
+  for(let y = oy % step; y <= h; y += step){
     ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
   }
-  const ox = 90, oy = h - 70;
+  for(let y = oy % step - step; y >= 0; y -= step){
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+
   ctx.strokeStyle = colors.axis;
   ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(40,oy); ctx.lineTo(w-30,oy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(ox,h-30); ctx.lineTo(ox,30); ctx.stroke();
-  drawArrowHead(w-30, oy, 1, 0, colors.axis, 10);
-  drawArrowHead(ox, 30, 0, -1, colors.axis, 10);
+  ctx.beginPath(); ctx.moveTo(20,oy); ctx.lineTo(w-20,oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox,h-20); ctx.lineTo(ox,20); ctx.stroke();
+  drawArrowHead(w-20, oy, 1, 0, colors.axis, 10);
+  drawArrowHead(ox, 20, 0, -1, colors.axis, 10);
+
   ctx.fillStyle = colors.muted;
-  ctx.font = '16px Microsoft YaHei, sans-serif';
-  ctx.fillText('x', w-20, oy-10);
-  ctx.fillText('y', ox+10, 24);
-  ctx.fillText('O', ox-18, oy+24);
+  ctx.font = '15px Microsoft YaHei, sans-serif';
+  ctx.fillText('x', w-16, oy-10);
+  ctx.fillText('y', ox+10, 18);
+  ctx.fillText('O', ox+8, oy+18);
 }
 
 function drawArrowHead(x, y, ux, uy, color, size=12){
@@ -237,8 +247,6 @@ function drawArrow(x1, y1, x2, y2, color, label='', dashed=false, width=4.2){
 
   const headSize = Math.max(11, width * 2.6);
   const ux = dx / L, uy = dy / L;
-
-  // 让线段在箭头底边之前结束，避免“方形线头露角”
   const shaftEndX = x2 - ux * (headSize * 0.95);
   const shaftEndY = y2 - uy * (headSize * 0.95);
 
@@ -320,10 +328,6 @@ function draw(){
     const label = state.mode === 'drawB' ? 'B' : 'A';
     drawArrow(state.currentStart.x, state.currentStart.y, state.currentEnd.x, state.currentEnd.y, c, label, false, 4.3);
   }
-
-  ctx.fillStyle = colors.muted;
-  ctx.font = '14px Microsoft YaHei, sans-serif';
-  ctx.fillText('画布用于手绘矢量；已去除端点圆圈，突出箭头。', 18, 24);
 }
 
 function getPos(e){
@@ -365,8 +369,10 @@ document.getElementById('viewAdd').onclick = ()=>{ state.mode='add'; setActive('
 document.getElementById('viewSub').onclick = ()=>{ state.mode='sub'; setActive('viewSub'); updatePanel(); draw(); };
 document.getElementById('clear').onclick = ()=>{ state.A = null; state.B = null; state.mode='drawA'; setActive('drawA'); updatePanel(); draw(); };
 document.getElementById('example').onclick = ()=>{
-  state.A = {x1:90, y1:550, x2:300, y2:300};
-  state.B = {x1:90, y1:550, x2:340, y2:450};
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const ox = w/2, oy = h/2;
+  state.A = {x1:ox, y1:oy, x2:ox+180, y2:oy-160};
+  state.B = {x1:ox, y1:oy, x2:ox+220, y2:oy-40};
   state.mode='base'; setActive('viewBase'); updatePanel(); draw();
 };
 
